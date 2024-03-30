@@ -1,6 +1,6 @@
 GBAC,country,host,collection_date,taxon,ORF1b_aa_7,ORF1b_nt_17,ORF2_aa_25,color_orf1b16,num,code
-AB823731/Bhutan/human/2010/MAstV6,Bhutan,human,2010.0,MAstV6,0,8,8,#7f3eda,1,a
-AB823732/Bhutan/human/2010/MAstV6,Bhutan,human,2010.0,MAstV6,0,8,8,#7830dc,2,aa
+AB823731/BTN/human/2010/MAstV6,BTN,human,2010.0,MAstV6,0,8,8,#7f3eda,1,a
+AB823732/BTN/human/2010/MAstV6,BTN,human,2010.0,MAstV6,0,8,8,#7830dc,2,aa
 AF260508/NA/human/NA/MAstV1,,human,,MAstV1,32,4,9,#57e457,3,aaa
 AY179509/NA/mink/NA/MAstV10,,mink,,MAstV10,39,24,24,#000000,4,aaaa
 AY720891/NA/human/NA/MAstV1,,human,,MAstV1,32,4,5,#71df71,5,aaab
