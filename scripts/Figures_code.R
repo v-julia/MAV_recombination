@@ -500,7 +500,7 @@ aln_mav_ORF1B_lessgp = read.dna("MAV_ORF1b_GenBank.fasta", format="fasta")
 ph_ORF1B_all_sp  = plot_aa_nt_hists_sp(aln_mav_ORF1B_lessgp, 1, length(aln_mav_ORF1B_lessgp[1,]), 6)
 df_dist_ORF1B_sp = ph_ORF1B_all_sp[[1]]
 
-hists = plot_hists(df_dist_ORF2_sp, df_dist_ORF1B_sp, "ORF2 sequences from GenBank (N=894)", "ORF1B sequences from GenBank (N=522)")
+hists = plot_hists(df_dist_ORF2_sp, df_dist_ORF1B_sp, "ORF2 sequences from GenBank (N=894)", "ORF1b sequences from GenBank (N=522)")
 hists
 
 
@@ -513,8 +513,7 @@ ggsave("../Fig2_zoomed.png", hists_zoomed, width=10, height=6, dpi = 1000)
 
 #FIGURE 5
 
-grad_trees= list.files(path = "", full.names = TRUE, pattern = ".nwk$")
-
+grad_trees= list.files(path = ".", full.names = TRUE, pattern = ".nwk$")
 
 for (file in grad_trees){
   print(file)
