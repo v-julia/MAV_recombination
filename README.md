@@ -5,6 +5,7 @@ Alignments, phylogenetic trees, and metadata are located in `data`.
 
 `scripts/Figures_code.R` - code to reproduce the figures.
 
+`scripts/gradient_trees.ipynb` - functions to produce color scheme for taxa labels in phylogenetic trees.
 
 ## Pipeline for generation of alignment of concatenated ORFs
 
@@ -79,22 +80,6 @@ optional arguments:
                         csv-file with coordinates of ORFs retrived from CDS field of genbank file
 ```
 
-
-### gap_in_row.py
-
-Removes sequences with many gaps in row from file in fasta format. Output file in fasta format is saved in the save folder as input file.
-
-#### Usage
-```
-gap_in_row.py [-h] -input INPUT_FILE -gap_count GAP_COUNT
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -input INPUT_FILE, --input_file INPUT_FILE
-                        Input file
-  -gap_count GAP_COUNT, --gap_count GAP_COUNT
-                        Amount of gaps in a row
-```
 
 ### remove_similar.py
 
