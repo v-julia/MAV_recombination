@@ -2,6 +2,17 @@
 Data and code for preprint "*Mamastrovirus* species are shaped by recombination and can be reliably distinguished in ORF1b genome region" by Y. Aleshina and A. Lukashev
 
 Alignments, phylogenetic trees, and metadata are located in `data`.
+- Datasets of nearly complete ORF1b and ORF2 sequences available in GenBank
+  - `MAV_ORF1b_GenBank.fasta`, `MAV_ORF2_GenBank.fasta` - alignments
+  - `MAV_ORF1b_GenBank_metadata.csv`, `MAV_ORF2_GenBank_metadata.csv` - metadata for sequences
+  - `MAV_ORF1b_GenBank.nwk`,`MAV_ORF2_GenBank.nwk` - phylogenetic trees
+- Datasets of concatenated ORFs
+  - `MAV_wg.fasta` - alignments
+  - `MAV_wg_metadata.csv` - metadata for sequences
+  - `ORF1a_wg.nwk`, `ORF1b_wg.nwk`, `ORF2_wg.nwk`, `All_wg.nwk` - phylogenetic trees for ORF1a, ORF1b, ORF2 regions and concatenated ORFs respectively.
+  - `ORF1a_wg_newclf.nwk`, `ORF1b_wg_newclf.nwk`, `ORF2_wg_newclf.nwk` - phylogenetic trees with taxa labels updated according to taxonomic proposal
+  - `TableS1.xlsx` - table with GenBank Accessions and metadata for complete genome sequences used in this study
+
 
 `scripts/Figures_code.R` - code to reproduce the figures.
 
