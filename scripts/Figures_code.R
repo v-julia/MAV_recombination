@@ -5,18 +5,20 @@ library('ggtree')
 library('ggnewscale')
 library('phytools')
 library('treeio')
+library('EBImage')
 library('GiNA')
-library(randomcoloR)
 library(viridis)
 library(paletteer)
 library("seqinr")
-library(stringr)
-library(spaa)
 library(ggExtra)
 library(patchwork)
 library(ggpubr)
 library(gplots)
 library(colorRamps)
+library(dplyr)
+library(stringr)
+library(spaa)
+library(randomcoloR)
 
 # COLORS FOR SPECIES AND HOSTS IN  PHYLOGENETIC TREES
 
@@ -160,26 +162,33 @@ hosts_cols_wg = c(
            
 
 
-
 # Trees for ORF1b and ORF2 
-plot_annotated_tree = function(tree_file, meta, species_cols, colors_hosts, type){
+plot_annotated_tree_clusters = function(tree_file, meta, species_cols, colors_hosts, type, taxlabel){
+
   tree =  read.tree(tree_file)
   tree_rooted = midpoint.root(tree)
   info = read.csv(meta)
   
-  #num_hosts = nrow(unique(info['host']))
-  #print(num_hosts)
-  #colors_hosts = distinctColorPalette(num_hosts)
-  #print(colors_hosts)
   if (type == 'ORF2'){
-    num_clusters_aa = max(info['orf2_aa'])
-    print(num_clusters_aa)
-    colors_aa = distinctColorPalette(num_clusters_aa+1)
-    #cluster_aa = data.frame(aa = as.factor(info[,c(paste(tolower(type),"aa",sep="_"))]))
-    cluster_aa = data.frame(aa = as.factor(info[,"aa_mmseq2"]))
-    rownames(cluster_aa) <- info$GBAC
+    num_clusters_uclust = max(info['uclust25aa'])
+    num_clusters_mm = max(info['mmseq25aa'])
+    cluster_uc = data.frame(uc = as.factor(info[,"uclust25aa"]))
+    cluster_mm = data.frame(mm = as.factor(info[,"mmseq25aa"]))
+  }else{
+    num_clusters_uclust = max(info['uclust17nt'])
+    num_clusters_mm = max(info['mmseq17nt'])
+    cluster_uc = data.frame(uc = as.factor(info[,"uclust17nt"]))
+    cluster_mm = data.frame(mm = as.factor(info[,"mmseq17nt"]))
   }
-  
+    print(num_clusters_uclust)
+    print(num_clusters_mm)
+    
+    colors_uc = distinctColorPalette(num_clusters_uclust+1)
+    colors_mm = distinctColorPalette(num_clusters_mm+1)
+    
+    rownames(cluster_uc) <- info$GBAC
+    rownames(cluster_mm) <- info$GBAC
+    
   host = data.frame("host" = info[,c("host")])
   rownames(host) <- info$GBAC
   #print(host)
@@ -188,79 +197,81 @@ plot_annotated_tree = function(tree_file, meta, species_cols, colors_hosts, type
   rownames(species) <- info$GBAC
   #print(species)
   
-  
-  t = ggtree(tree_rooted, size=0.75) %<+% info +
-    geom_point2(aes(label=label, 
-                    subset = !is.na(as.numeric(label)) & as.numeric(label) < 80), size=1, color="red",alpha=0.5) +
-    geom_treescale() #+ geom_tiplab(size =1)
-  
+  if (taxlabel == TRUE){
+    t = ggtree(tree_rooted, size=0.75) %<+% info +
+      geom_point2(aes(label=label, 
+                      subset = !is.na(as.numeric(label)) & as.numeric(label) < 80), size=1, color="red",alpha=0.5) +
+      geom_treescale() + geom_tiplab(size =2)
+  }else{
+    t = ggtree(tree_rooted, size=0.75) %<+% info +
+      geom_point2(aes(label=label, 
+                      subset = !is.na(as.numeric(label)) & as.numeric(label) < 80), size=1, color="red",alpha=0.5) +
+      geom_treescale()
+  }
   g1 = gheatmap(t, species,                           # we add a heatmap layer of the gender dataframe to our tree plot
                 #offset = 1,                               # offset shifts the heatmap to the right,
                 width = 0.05,# width defines the width of the heatmap column,
                 colnames_angle=45,
                 color = NULL)+
     scale_fill_manual(values=species_cols)
-  if (type == 'ORF2'){
-    g1 = g1 + new_scale_fill()
-    g1 = gheatmap(g1, cluster_aa, width = 0.05,
-                  colnames_position = "top",
-                  offset=0.25,
-                  #colnames_offset_y = 1,
-                  colnames_angle=45)+
-      scale_fill_manual(values=colors_aa)
-  }
+
+  g1 = g1 + new_scale_fill()
+  g1 = gheatmap(g1, cluster_uc, width = 0.05,
+                colnames_position = "top",
+                offset=0.20,
+                #colnames_offset_y = 1,
+                colnames_angle=45)+
+    scale_fill_manual(values=colors_uc)
+  g1 = g1 + new_scale_fill()
+  g1 = gheatmap(g1, cluster_mm, width = 0.05,
+                colnames_position = "top",
+                offset=0.35,
+                #colnames_offset_y = 1,
+                colnames_angle=45)+
+    scale_fill_manual(values=colors_mm)
+  
   g2 = g1 + new_scale_fill()
   
   g3 = gheatmap(g2, host, width = 0.05,
                 colnames_position = "top",
-                offset=0.50,
+                offset=0.60,
                 #colnames_offset_y = 1,
                 colnames_angle=45)+
-    scale_fill_manual(values=colors_hosts)
-  
-  
+    scale_fill_manual(values=colors_hosts) +
+    theme(legend.position = "none")
+
   return(g3)
 }
 
+
 # Tree with leaves colored in gradient
-plot_annotated_grad_mm_tree = function(tree_file, meta, species_cols, colors_hosts, type){
+plot_annotated_grad_mm_tree2 = function(tree_file, meta, species_cols, colors_hosts, type){
+  
   tree =  read.tree(tree_file)
   tree_rooted = midpoint.root(tree)
+  
   info = read.csv(meta)
   print(type)
-  if (type != 'ORF1a'){
-    if (type == 'ORF1b'){
-      num_clusters_nt = max(info['ORF1b_nt_17'])
-      num_clusters_aa = max(info['ORF1b_aa_7'])
-      
-      colors_nt = distinctColorPalette(num_clusters_nt+1)
-      colors_aa = distinctColorPalette(num_clusters_aa+1)
-      
-      cluster_nt = data.frame(nt = as.factor(info[,'ORF1b_nt_17']))
-      rownames(cluster_nt) <- info$GBAC
-      
-      cluster_aa = data.frame(aa = as.factor(info[,'ORF1b_aa_7']))
-      rownames(cluster_aa) <- info$GBAC
-      
-      print(num_clusters_nt)
-      print(num_clusters_aa)
-    }
-    else{
-      num_clusters_aa = max(info['ORF2_aa_25'])
-      colors_aa = distinctColorPalette(num_clusters_aa+1)
-      
-      cluster_aa = data.frame(aa = as.factor(info[,'ORF2_aa_25']))
-      rownames(cluster_aa) <- info$GBAC
-      
-      print(num_clusters_aa)
-      
-      
-    }
-  }
   
+  #colors for nt clusters
+  meta_color = info %>% select(c("ORF1b.nt17","X1bcolor"))
+  meta_color$ORF1b.nt17 = as.character(meta_color$ORF1b.nt17)
+  colors_nt = (meta_color %>% arrange(ORF1b.nt17) %>% distinct())$X1bcolor
+  # nt clusters for color bar
+  cluster_nt = data.frame(nt = as.factor(info[,'ORF1b.nt17']))
+  rownames(cluster_nt) <- info$GBAC
+  
+  #colors for aa clusters
+  meta_color = info %>% select(c("ORF2.aa25","X2color"))
+  meta_color$ORF2.aa25 = as.character(meta_color$ORF2.aa25)
+  # aa clusters for color bar
+  colors_aa = (meta_color %>% arrange(ORF2.aa25) %>% distinct())$X2color
+  cluster_aa = data.frame(aa = as.factor(info[,'ORF2.aa25']))
+  rownames(cluster_aa) <- info$GBAC
+
   host = data.frame("host" = info[,c("host")])
   rownames(host) <- info$GBAC
-
+  
   species = data.frame("species" = info[,c("taxon")])
   rownames(species) <- info$GBAC
   
@@ -272,6 +283,10 @@ plot_annotated_grad_mm_tree = function(tree_file, meta, species_cols, colors_hos
                     subset = !is.na(as.numeric(label)) & as.numeric(label) < 80), size=1, color="red",alpha=0.5) +
     geom_treescale()
   
+  taxa_names = get_taxa_name(t)
+  #print(taxa_names)
+  write.csv(taxa_names,file=paste0(type,"_order.csv"),row.names=F,col.names=F)
+  
   g0 = gheatmap(t, species, #heatmap layer of species names
                 offset = 0.25,
                 width = 0.05,
@@ -280,26 +295,23 @@ plot_annotated_grad_mm_tree = function(tree_file, meta, species_cols, colors_hos
                 color = NULL)+
     scale_fill_manual(values=species_cols)
   g0 = g0 + new_scale_fill()
+  
+  
+  g0 = gheatmap(g0, cluster_nt, width = 0.05, #heatmap layer of clusters in ORF1b sequences defined by MMSeqs2
+                colnames_position = "top",
+                offset=0.40,
+                #colnames_offset_y = 1,
+                colnames_angle=45)+
+    scale_fill_manual(values=colors_nt)
+  g0 = g0 + new_scale_fill()
+  
 
-  if (type != 'ORF1a'){
-    
-    if (type == 'ORF1b'){
-    g0 = gheatmap(g0, cluster_nt, width = 0.05, #heatmap layer of clusters in ORF1b sequences defined by MMSeqs2
+  g0 = gheatmap(g0, cluster_aa, width = 0.05,
                   colnames_position = "top",
-                  offset=0.40,
-                  #colnames_offset_y = 1,
-                  colnames_angle=45)+
-      scale_fill_manual(values=colors_nt)
-    g0 = g0 + new_scale_fill()
-    }
-    g0 = gheatmap(g0, cluster_aa, width = 0.05,
-                  colnames_position = "top",
-                  offset=0.55,
+                  offset=0.6,
                   #colnames_offset_y = 1,
                   colnames_angle=45)+
       scale_fill_manual(values=colors_aa)
-    
-  }
 
   g0 = g0 + new_scale_fill()
   g1 = gheatmap(g0, host, # heatmap layer of host names
@@ -309,9 +321,6 @@ plot_annotated_grad_mm_tree = function(tree_file, meta, species_cols, colors_hos
                 colnames_position = "top",
                 color = NULL)+
     scale_fill_manual(values=colors_hosts)
-  
-  
-  
   
   return(g1)
 }
@@ -354,7 +363,7 @@ plot_hists_zoom = function(df_dist1, df_dist2){
   hist1_nt = ggplot(df_dist1, aes(x=value.x, fill = same_species)) +
     geom_histogram(alpha=0.5, bins=50, position="identity") +
     theme_bw() + xlab("nucleotide distance") + ggtitle(" ") +
-    theme(legend.position="none")+
+    #theme(legend.position="none")+
     theme(legend.justification=c(0.1,0.9), legend.position=c(0.1,0.9)) +
     scale_x_continuous(limits = c(0, 0.4), oob = function(x, limits) x) + 
     scale_y_continuous(limits = c(0, 3000), oob = function(y, limits) y)
@@ -424,6 +433,7 @@ plot_hists = function(df_dist1, df_dist2, title1, title2){
 }
 
 # FOR PDC plots
+# checks whether values in columns are NA or not and returns table with new boolean column
 
 check_param = function(d, colnum){
   
@@ -443,48 +453,150 @@ check_param = function(d, colnum){
   return(d)
 }
 
-get_host_type = function(col_host, list_host_type){
-  c_host_type = c()
-  for (i in 1:length(col_host)){
-    c_host_type = append(c_host_type,list_host_type[[col_host[i]]])
-  }
-  return(c_host_type)
-}
-
-check_param_host_type = function(d, colnum,list_host_type){
-  
-  spl_df1 = str_split(d$row, '/', simplify = TRUE)
-  spl_df2 = str_split(d$col, '/', simplify = TRUE)
-  spl_df1_param = spl_df1[,colnum]
-  spl_df2_param = spl_df2[,colnum]
-  
-  spl_df1_hosttype = get_host_type(spl_df1_param,list_host_type)
-  spl_df2_hosttype = get_host_type(spl_df2_param,list_host_type)
-  
-  
-  any_NA = spl_df1_hosttype == "NA" | spl_df2_hosttype == "NA"
-  same_param = spl_df1_hosttype == spl_df2_hosttype
-  
-  vector_param = vector("character", length(spl_df1_param))
-  vector_param[same_param == TRUE] = "yes"
-  vector_param[same_param == FALSE] = "no"
-  vector_param[any_NA == TRUE] = "unknown"
-  d = cbind(d, vector_param)
-  return(d)
-}
 
 # FIGURE 1
 
 setwd("../data")
 
-orf1b_all_g = plot_annotated_tree("MAV_ORF1b_GenBank.nwk","MAV_ORF1b_GenBank_metadata.csv",species_cols, hosts_cols,"ORF1b")
+
+# PIECHARTS
+meta_df_1b = read.csv("MAV_ORF1b_GenBank_metadata.csv")
+meta_df_2 = read.csv("MAV_ORF2_GenBank_metadata.csv")
+
+#ORF1b
+taxa1b = meta_df_1b %>% 
+  group_by(taxon) %>% # Variable to be transformed
+  count() %>% 
+  ungroup() %>% 
+  mutate(perc = `n` / sum(`n`)) %>% 
+  arrange(perc) %>%
+  mutate(labels = scales::percent(perc))
+taxa1b
+
+species_cols_pie_orf1b = c( "#980036",#10
+                            "#006400", #11
+                            "#c0df82", #12
+                            "#48d1cc", #15
+                            "#8e9aff", #18
+                            "#ffa500", #19
+                            "#d8bfd8", #7
+                            "#4b0082", #13
+                            "#00ff00", #3
+                            "#ff00ff", #8
+                            "#1e90ff", #9
+                            "#0000ff", #6
+                            "#ffff00", #2
+                            "#00ffff", #5
+                            "#ff0000", #1
+                            "#808080"
+)
+
+
+pie_chart1b=ggplot(taxa1b, aes(x = "", y = perc, fill = reorder(taxon,n)))+
+  geom_col(color = "black") +
+  geom_label(aes(label = labels),
+             position = position_stack(vjust = 0.5),
+             show.legend = FALSE) +
+  guides(fill = guide_legend(title = "Species")) +
+  scale_fill_manual(values=species_cols_pie_orf1b) +
+  coord_polar(theta = "y") + 
+  theme_void()
+pie_chart1b
+ggsave('../Fig1_pie1b.svg', height=12, width=12)
+
+
+pie_chart1b_small=ggplot(taxa1b %>% filter(n<10), aes(x = "", y = n, fill = reorder(taxon,n)))+
+  geom_col(color = "black") +
+  #geom_label(aes(label = n),
+  #           position = position_stack(vjust = 0.5),
+  #           show.legend = FALSE) +
+  guides(fill = guide_legend(title = "Species")) +
+  scale_fill_manual(values=species_cols_pie_orf1b) +
+  #coord_polar(theta = "y") + 
+  theme_void()
+pie_chart1b_small
+ggsave('../Fig1_pie1b_small.svg', height=12, width=12)
+
+#ORF2
+taxa2 = meta_df_2 %>% 
+  mutate(across(c("taxon"), ~na_if(., "")))%>% 
+  group_by(taxon) %>% # Variable to be transformed
+  count() %>% 
+  ungroup() %>% 
+  mutate(perc = `n` / sum(`n`)) %>% 
+  arrange(perc) %>%
+  mutate(labels = scales::percent(perc)) 
+
+species_cols_pie2orf2 = c(     "#980036",#10
+                               "#c0df82", #12
+                               "#ffab7e", #14
+                               "#48d1cc", #15
+                               "#ff69b4", #16
+                               "#37f0a7", #17
+                               "#8e9aff", #18
+                               "#db2e55", #4
+                               "#d8bfd8", #7
+                               "#006400", #11
+                               "#4b0082", #13
+                               "#00ff00", #3
+                               "#ffa500", #19
+                               "#ff00ff", #8
+                               "#0000ff", #6
+                               "#1e90ff", #9
+                               "#00ffff", #5
+                               "#ffff00", #2
+                               "#ff0000", #1
+                               "#743318"
+)
+
+pie_chart2=ggplot(taxa2, aes(x = "", y = perc, fill = reorder(taxon,n))) +
+  geom_col(color = "black") +
+  geom_label(aes(label = labels),
+             position = position_stack(vjust = 0.5),
+             show.legend = FALSE) +
+  guides(fill = guide_legend(title = "Species")) +
+  scale_fill_manual(values=species_cols_pie2orf2) +
+  coord_polar(theta = "y") + 
+  theme_void()
+pie_chart2
+ggsave('../Fig1_pie2.svg', height=12, width=12)
+
+pie_chart2small=ggplot(taxa2 %>% filter(n<10), aes(x = "", y = perc, fill = reorder(taxon,n))) +
+  geom_col(color = "black") +
+  #geom_label(aes(label = labels),
+  #           position = position_stack(vjust = 0.5),
+  #           show.legend = FALSE) +
+  guides(fill = guide_legend(title = "Species")) +
+  scale_fill_manual(values=species_cols_pie2orf2) +
+  #coord_polar(theta = "y") + 
+  theme_void()
+pie_chart2small
+ggsave('../Fig1_pie2small.svg', height=12, width=12)
+
+# Trees
+
+orf1b_all_g = plot_annotated_tree_clusters("MAV_ORF1b_GenBank.nwk","MAV_ORF1b_GenBank_metadata.csv",species_cols, hosts_cols,"ORF1b", FALSE)
 orf1b_all_g
 ggsave('../Fig1_tree_ORF1b.png', height=12, width=12)
 
 
-orf2_all_g = plot_annotated_tree("MAV_ORF2_GenBank.nwk","MAV_ORF2_GenBank_metadata.csv",species_cols_orf2,hosts_cols_orf2,"ORF2")
+
+orf2_all_g = plot_annotated_tree("MAV_ORF2_GenBank.nwk","MAV_ORF2_GenBank_metadata.csv",species_cols_orf2,hosts_cols_orf2,"ORF2", FALSE)
 orf2_all_g
 ggsave('../Fig1_tree_ORF2.png', height=12, width=15)
+
+
+
+# SUPPLEMENTARY FIGURE 1 WITH CLUSTERING RESULTS
+orf1b_all_g = plot_annotated_tree_clusters("MAV_ORF1b_GenBank.nwk","MAV_ORF1b_GenBank_metadata.csv",species_cols, hosts_cols,"ORF1b", TRUE)
+orf1b_all_g
+ggsave('../Fig1_tree_ORF1b_cl.pdf', height=35, width=12)
+
+
+orf2_all_g = plot_annotated_tree_clusters("MAV_ORF2_GenBank.nwk","MAV_ORF2_GenBank_metadata.csv",species_cols_orf2,hosts_cols_orf2,"ORF2", TRUE)
+orf2_all_g
+ggsave('../Fig1_tree_ORF2_cl.pdf', height=49, width=8)
+
 
 #FIGURE2
 
@@ -503,6 +615,7 @@ df_dist_ORF1B_sp = ph_ORF1B_all_sp[[1]]
 hists = plot_hists(df_dist_ORF2_sp, df_dist_ORF1B_sp, "ORF2 sequences from GenBank (N=894)", "ORF1b sequences from GenBank (N=522)")
 hists
 
+#FIGURE S2
 
 hists_zoomed = plot_hists_zoom(df_dist_ORF2_sp, df_dist_ORF1B_sp)
 hists_zoomed
@@ -511,21 +624,50 @@ ggsave("../Fig2.png", hists, width=10, height=6, dpi = 1000)
 ggsave("../Fig2_zoomed.png", hists_zoomed, width=10, height=6, dpi = 1000)
 
 
-#FIGURE 5
+# Whole genome dataset
+# ORF2
 
-grad_trees= list.files(path = ".", full.names = TRUE, pattern = ".nwk$")
+aln_mav_ORF2_wg = read.dna("mav_wg_aln_ORF2.fasta", format="fasta")
+ph_ORF2_all_sp  = plot_aa_nt_hists_sp(aln_mav_ORF2_wg, 1, length(aln_mav_ORF2_wg[1,]), 5)
+df_dist_ORF2_sp = ph_ORF2_all_sp[[1]]
+
+
+aln_mav_ORF1B_wg = read.dna("mav_wg_aln_ORF1b.fasta", format="fasta")
+ph_ORF1B_all_sp  = plot_aa_nt_hists_sp(aln_mav_ORF1B_wg, 1, length(aln_mav_ORF1B_wg[1,]), 5)
+df_dist_ORF1B_sp = ph_ORF1B_all_sp[[1]]
+
+hists = plot_hists(df_dist_ORF2_sp, df_dist_ORF1B_sp, "ORF2", "ORF1b")
+hists
+
+
+hists_zoomed = plot_hists_zoom(df_dist_ORF2_sp, df_dist_ORF1B_sp)
+hists_zoomed
+
+ggsave("../Fig2_wg.png", hists, width=10, height=6, dpi = 1000)
+ggsave("../Fig2_wg_zoomed.png", hists_zoomed, width=10, height=6, dpi = 1000)
+
+ggsave("../Fig2_wg.svg", hists, width=10, height=6)
+ggsave("../Fig2_wg_zoomed.svg", hists_zoomed, width=10, height=6)
+
+
+#FIGURE 4
+
+
+grad_trees= list.files(path = ".", full.names = TRUE, pattern = "wg.nwk$")
 
 for (file in grad_trees){
   print(file)
-  g = plot_annotated_grad_mm_tree(file,
-                               "MAV_wg_metadata.csv",
-                               species_cols_wg, hosts_cols_wg, strsplit(strsplit(file, '/')[[1]][2], '.nwk')[[1]][1])  + 
+  g = plot_annotated_grad_mm_tree2(file,
+                                  "MAV_wg_metadata.csv",
+                                  species_cols_wg, hosts_cols_wg, strsplit(strsplit(file, '/')[[1]][2], '_wg.nwk')[[1]][1])  + 
     theme(legend.position = "none") +
     ggtitle(strsplit(strsplit(file, '/')[[1]][2], '.nex')[[1]][1])
-  ggsave(paste(file,"mm", "svg",sep="."),height=10, width=7)
+  ggsave(paste(file, "pdf",sep="."),height=20, width=10)
 }
 
-#FIGURES 4,6
+
+
+#FIGURES S3,6
 
 fig_path = "../"
 
